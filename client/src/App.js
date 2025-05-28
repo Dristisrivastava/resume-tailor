@@ -2,6 +2,8 @@ import React, { useState } from 'react';
 import './App.css';
 
 function App() {
+  const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:5000';
+
   const [resume, setresume] = useState(null);
   const [jobDescription, setjobDescription] = useState('');
   const [isLoading, setisLoading] = useState(false);
@@ -39,7 +41,7 @@ function App() {
       formData.append('resume', resume);
       formData.append('jobDescriptionText', jobDescription); // Text instead of file
 
-      const response = await fetch('http://localhost:5000/api/upload', {
+      const response = await fetch(`${API_BASE_URL}/api/upload`, {
         method: 'POST',
         body: formData,
       });
@@ -186,7 +188,6 @@ function App() {
                 ))}
               </ul>
             </div>
-
           </div>
         )}
       </main>
