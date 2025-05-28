@@ -25,7 +25,7 @@ const ResumeAnalysisSchema=new mongoose.Schema({
         fileName:String,
         filePath:{
             type:String,
-            required:true,
+            required:false,
         },
         text:{
             type:String,
@@ -58,8 +58,8 @@ const ResumeAnalysisSchema=new mongoose.Schema({
                 default:1,
             }
         }],
-        reccomendation:{
-        Additions: [String],
+        recommendation:{
+        additions: [String],
         Removals:[String],
         feedback:String
         },

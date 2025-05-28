@@ -3,10 +3,10 @@ import './App.css';
 
 function App() {
   const [resume, setresume] = useState(null);
-  const [jobDescription, setjobDescription] = useState(null);
-  const [isLoading, setisLoading] = useState(null);
-  const [message, setmessage] = useState(null);
-  const [error, seterror] = useState(null);
+  const [jobDescription, setjobDescription] = useState('');
+  const [isLoading, setisLoading] = useState(false);
+  const [message, setmessage] = useState('');
+  const [error, seterror] = useState('');
   const [analysisresult, setanalysisresult] = useState(null);
 
   const handelresume = (e) => {
@@ -16,33 +16,29 @@ function App() {
       seterror('');
     } else {
       setresume(null);
-      seterror('give only pdf file');
+      seterror('Please upload a PDF file for resume.');
     }
   };
 
-  const handeljobdesc = (e) => {
-    const file = e.target.files[0];
-    if (file && (file.type === 'application/pdf' || file.type === 'text/plain')) {
-      setjobDescription(file);
-      seterror('');
-    } else {
-      setjobDescription(null);
-      seterror('give pdf or txt file');
-    }
+  const handleJobDescChange = (e) => {
+    setjobDescription(e.target.value);
   };
 
   const handelsubmit = async (e) => {
     e.preventDefault();
-    if (!resume || !jobDescription) {
-      seterror('please upload both the files');
+    if (!resume || !jobDescription.trim()) {
+      seterror('Please upload your resume and type the job description.');
       return;
     }
     try {
       setisLoading(true);
       setanalysisresult(null);
+      setmessage('');
+      seterror('');
       const formData = new FormData();
       formData.append('resume', resume);
-      formData.append('jobDescription', jobDescription);
+      formData.append('jobDescriptionText', jobDescription); // Text instead of file
+
       const response = await fetch('http://localhost:5000/api/upload', {
         method: 'POST',
         body: formData,
@@ -50,18 +46,27 @@ function App() {
       const data = await response.json();
 
       if (response.ok && data.success) {
-        setmessage('file uploaded, please wait a while');
+        setmessage('File uploaded successfully! Here is the analysis:');
         seterror('');
-        setanalysisresult(data.results);
+        setanalysisresult({
+          ...data.result,
+          topresumekey: data.result.topresumekey || [],
+          topjobkey: data.result.topjobkey || [],
+          additions: data.result.additions || [],
+          removal: data.result.removal || [],
+          matchScore: data.result.matchScore || 0,
+          similarityscore: data.result.similarityscore || 0,
+          feedback: data.result.feedback || ''
+        });
       } else {
-        seterror(data.message || 'some error has occured please try again');
+        seterror(data.message || 'Some error occurred. Please try again.');
         setmessage('');
         setanalysisresult(null);
       }
     } catch (error) {
-      seterror('server error');
+      seterror('Server error. Please try again later.');
       setanalysisresult(null);
-      console.error('err uploading', error);
+      console.error('Error uploading files:', error);
     } finally {
       setisLoading(false);
     }
@@ -69,26 +74,25 @@ function App() {
 
   const resetForm = () => {
     setresume(null);
-    setjobDescription(null);
+    setjobDescription('');
     setanalysisresult(null);
     setmessage('');
     seterror('');
     document.getElementById('resume').value = '';
-    document.getElementById('jobDescription').value = '';
   };
 
   const getScorecolor = (score) => {
-    if (score >= 70) return '#27ae60'; // Green
-    if (score >= 50) return '#f39c12'; // Orange
-    if (score >= 30) return '#e67e22'; // Dark orange
-    return '#e74c3c'; // Red
+    if (score >= 70) return '#27ae60';
+    if (score >= 50) return '#f39c12';
+    if (score >= 30) return '#e67e22';
+    return '#e74c3c';
   };
 
   return (
     <div className="App">
       <header className="App-header">
         <h1>Resume Update</h1>
-        <p>Upload your resume and a job description to get updated resume</p>
+        <p>Upload your resume and paste the job description to get updated resume analysis</p>
       </header>
 
       <main className="App-main">
@@ -106,15 +110,16 @@ function App() {
           </div>
 
           <div className="form-group">
-            <label htmlFor="jobDescription">Upload Job Description (PDF or TXT):</label>
-            <input
-              type="file"
+            <label htmlFor="jobDescription">Paste Job Description:</label>
+            <textarea
               id="jobDescription"
-              accept=".pdf,.txt"
-              onChange={handeljobdesc}
-              className="file-input"
+              rows="6"
+              value={jobDescription}
+              onChange={handleJobDescChange}
+              placeholder="Paste or type the job description here..."
+              className="text-input"
+              required
             />
-            {jobDescription && <p className="file-selected">Selected: {jobDescription.name}</p>}
           </div>
 
           {error && <p className="error-message">{error}</p>}
@@ -123,7 +128,7 @@ function App() {
           <button
             type="submit"
             className="submit-button"
-            disabled={isLoading || !resume || !jobDescription}
+            disabled={isLoading || !resume || !jobDescription.trim()}
           >
             {isLoading ? 'Uploading...' : 'Analyze Resume'}
           </button>
@@ -149,45 +154,39 @@ function App() {
               </span>
             </p>
             <p>
-              <strong>Similarity Score:</strong> {analysisresult.simarityscore}%
+              <strong>Similarity Score:</strong> {analysisresult.similarityscore}%
             </p>
             <p>
               <strong>Feedback:</strong> {analysisresult.feedback}
             </p>
+
             <div>
               <h3>Top Resume Keywords</h3>
               <ul>
-                {analysisresult.topresumekey.map((word, index) => (
+                {(analysisresult.topresumekey || []).map((word, index) => (
                   <li key={index}>{word}</li>
                 ))}
               </ul>
             </div>
+
             <div>
               <h3>Top Job Description Keywords</h3>
               <ul>
-                {analysisresult.topjobkey.map((word, index) => (
+                {(analysisresult.topjobkey || []).map((word, index) => (
                   <li key={index}>{word}</li>
                 ))}
               </ul>
             </div>
+
             <div>
               <h3>Recommended Additions</h3>
               <ul>
-                {analysisresult.Addition.map((word, index) => (
+                {(analysisresult.additions || []).map((word, index) => (
                   <li key={index}>{word}</li>
                 ))}
               </ul>
             </div>
-            {analysisresult.removal && analysisresult.removal.length > 0 && (
-              <div>
-                <h3>Suggested Removals</h3>
-                <ul>
-                  {analysisresult.removal.map((word, index) => (
-                    <li key={index}>{word}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+
           </div>
         )}
       </main>

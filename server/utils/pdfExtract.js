@@ -9,7 +9,7 @@ const { buffer } = require('stream/consumers');
  * @returns {promises<string>} -the extracted text
  */
 
-async function textExtracter(filePath) {
+async function extracttext(filePath) {
     try {
         const Databuffer=fs.readFileSync(filePath);
 
@@ -23,5 +23,5 @@ async function textExtracter(filePath) {
 }
 
 module.exports ={
-    textExtracter //allowed to be use any where
+    extracttext //allowed to be use any where
 };
